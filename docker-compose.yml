@@ -1,7 +1,37 @@
-version: "3.9"
 services:
   gui:
     build: ./gui
     ports:
-      - 5000:5000
+      - "5000:5000"
 
+  user:
+    build: ./user
+    ports:
+      - "5001:5001"
+    networks:
+        - user
+    depends_on:
+      user-db:
+        condition: service_healthy
+
+  user-db:
+    container_name: user-db
+    image: postgres:16.3-bookworm
+    healthcheck:
+      test: "pg_isready -U 'root' -d 'user_db' || exit 1"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    env_file:
+      - ./user/user-db.env
+    ports:
+      - "5432:5432"
+    networks:
+      user:
+        aliases: ["user-db"]
+
+
+
+networks:
+  user:
+    internal: true
