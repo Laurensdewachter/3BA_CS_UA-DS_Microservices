@@ -9,8 +9,7 @@ generator db {
   recursive_type_depth = 5
 }
 
-model User {
-  id       String @id @default(cuid())
-  username String @unique
+model users {
+  username String @id
   password String
 }

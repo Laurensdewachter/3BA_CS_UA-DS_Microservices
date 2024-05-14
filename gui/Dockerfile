@@ -1,8 +1,15 @@
-# syntax=docker/dockerfile:1
+# Start from the official Python 3.12 image
 FROM python:3.12-rc-slim-buster
-COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
-COPY app.py app.py
-COPY templates templates
+
+# Set working directory
+WORKDIR /app
+
+# Take advantage of layering to prevent re-installing dependencies
+COPY ./requirements.txt /app
+RUN pip install -r requirements.txt
+
+# Copy source files
+COPY ./app.py /app/
+COPY ./templates /app/templates
 
 CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]

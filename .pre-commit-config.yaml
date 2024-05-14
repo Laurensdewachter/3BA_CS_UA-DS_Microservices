@@ -7,11 +7,6 @@ repos:
           - black == 22.6.0
           - usort == 1.0.4
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
-    hooks:
-      - id: mypy
-
   - repo: https://github.com/iamthefij/docker-pre-commit
     rev: v3.0.0
     hooks:

@@ -8,12 +8,12 @@ WORKDIR /app
 COPY ./requirements.txt /app
 RUN pip install -r requirements.txt
 
-# Copy prisma schema and format to force installation of prisma cli
+# Copy prisma schema and generate client
 COPY ./schema.prisma /app
-RUN prisma format
+RUN prisma generate
 
 # Copy source files
-COPY ./src /app/src
+COPY app.py /app
 
 # Push the database schema to the database on container start
-CMD prisma db push
+CMD prisma db push; python -m flask --app app run --host 0.0.0.0 --port 5001

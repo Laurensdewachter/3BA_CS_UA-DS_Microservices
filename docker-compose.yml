@@ -1,7 +1,6 @@
 services:
   # frontend service
   frontend:
-    container_name: frontend
     build: ./gui
     # Expose the frontend service on port 5000
     ports:
@@ -9,11 +8,12 @@ services:
 
   # User service
   user:
-    container_name: user
     build: ./user
-    # Specify internal network
-    networks:
-      - user
+    ports:
+      # Expose service port
+      - "5001:5001"
+      # Expose Prisma studio port for debugging purposes
+      - "5555:5555"
     # Wait for the user-db service to be healthy before starting the user service
     depends_on:
       user-db:
@@ -21,15 +21,13 @@ services:
 
     # User service database
   user-db:
-    container_name: user-db
     image: postgres:16.3-bookworm
     # Specify volume
     volumes:
       - user-db-data:/var/lib/postgresql/data
-    # Specify internal network
-    networks:
-      user:
-        aliases: [ "user-db" ]
+    ports:
+      # Outside access for debugging purposes
+      - "5432:5432"
     # Set environment variables
     environment:
       POSTGRES_USER: root
@@ -45,8 +43,3 @@ services:
 volumes:
   # Define volumes to ensure data persistence of service databases
   user-db-data: {}
-
-networks:
-  # Define networks to be used internally
-  user:
-    internal: true
