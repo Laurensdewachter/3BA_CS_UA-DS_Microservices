@@ -160,7 +160,12 @@ def login():
     # microservice returns True if correct combination, False if otherwise.
     # Also pay attention to the status code returned by the microservice.
     # ================================
-    success = True  # TODO: call
+
+    response = requests.get(
+        "http://user:5001/user",
+        json={"username": req_username, "password": req_password},
+    )
+    success: bool = successful_request(response)
 
     save_to_session("success", success)
     if success:

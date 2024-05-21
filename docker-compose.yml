@@ -5,6 +5,9 @@ services:
     # Expose the frontend service on port 5000
     ports:
       - "5000:5000"
+    # Sync local file to container for development
+    volumes:
+      - ./gui/app.py:/app/app.py
 
   # User service
   user:
@@ -14,6 +17,9 @@ services:
       - "5001:5001"
       # Expose Prisma studio port for debugging purposes
       - "5555:5555"
+    # Sync local file to container for development
+    volumes:
+      - ./user/app.py:/app/app.py
     # Wait for the user-db service to be healthy before starting the user service
     depends_on:
       user-db:
