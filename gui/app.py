@@ -172,8 +172,8 @@ def login():
     # Also pay attention to the status code returned by the microservice.
     # ================================
 
-    response = requests.get(
-        "http://user-service:5001/user",
+    response = requests.post(
+        "http://user-service:5001/user/login",
         json={"username": req_username, "password": req_password},
     )
     success: bool = successful_request(response)

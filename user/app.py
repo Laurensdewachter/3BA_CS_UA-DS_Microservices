@@ -26,30 +26,7 @@ def check_schema(body):
 
 
 class User(Resource):
-    def get(self) -> Response:
-        body = request.get_json()
-        try:
-            check_schema(body)
-        except ValidationError:
-            return Response({"error": "Invalid body structure"}, status=400)
-
-        username = body["username"]
-        password = body["password"]
-
-        try:
-            cur.execute("SELECT password FROM users where username = %s;", (username,))
-            user = cur.fetchone()
-        except Exception:
-            return Response({"error": "Internal server error"}, status=500)
-
-        if user is None:
-            return Response({"error": "User does not exist"}, status=404)
-
-        if user[0] != password:
-            return Response({"error": "Incorrect password"}, status=401)
-        return Response({"success": True}, status=200)
-
-    def post(self) -> Response:
+    def post(self):
         body = request.get_json()
         try:
             check_schema(body)
@@ -74,4 +51,30 @@ class User(Resource):
         return Response({"success": True}, status=200)
 
 
+class Login(Resource):
+    def post(self):
+        body = request.get_json()
+        try:
+            check_schema(body)
+        except ValidationError:
+            return Response({"error": "Invalid body structure"}, status=400)
+
+        username = body["username"]
+        password = body["password"]
+
+        try:
+            cur.execute("SELECT password FROM users where username = %s;", (username,))
+            user = cur.fetchone()
+        except Exception:
+            return Response({"error": "Internal server error"}, status=500)
+
+        if user is None:
+            return Response({"error": "User does not exist"}, status=404)
+
+        if user[0] != password:
+            return Response({"error": "Incorrect password"}, status=401)
+        return Response({"success": True}, status=200)
+
+
 api.add_resource(User, "/user")
+api.add_resource(Login, "/user/login")
