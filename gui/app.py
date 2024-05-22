@@ -60,6 +60,17 @@ def create_event():
     #
     # Given some data, create an event and send out the invites.
     # ==========================
+    requests.post(
+        "http://event-service:5002/event",
+        json={
+            "title": title,
+            "organizer": username,
+            "description": description,
+            "date": date,
+            "publicprivate": publicprivate,
+            "invites": invites,
+        },
+    )
 
     return redirect("/")
 
@@ -162,7 +173,7 @@ def login():
     # ================================
 
     response = requests.get(
-        "http://user:5001/user",
+        "http://user-service:5001/user",
         json={"username": req_username, "password": req_password},
     )
     success: bool = successful_request(response)
@@ -192,7 +203,7 @@ def register():
     # ================================
 
     response = requests.post(
-        "http://user:5001/user",
+        "http://user-service:5001/user",
         json={"username": req_username, "password": req_password},
     )
     success: bool = successful_request(response)

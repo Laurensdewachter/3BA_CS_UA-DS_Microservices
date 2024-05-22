@@ -9,9 +9,11 @@ generator db {
   recursive_type_depth = 5
 }
 
-model event {
-  title     String   @id
-  organizer String
-  date      DateTime
-  public    Boolean
+model events {
+  id          Int      @id @default(autoincrement())
+  title       String   @unique
+  organizer   String
+  date        DateTime
+  description String
+  public      Boolean
 }

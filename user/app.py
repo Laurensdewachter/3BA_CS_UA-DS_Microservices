@@ -3,7 +3,7 @@ from flask import Flask, request, Response
 from flask_restful import Api, Resource
 from jsonschema import validate, ValidationError
 
-app = Flask("User")
+app = Flask("user-service")
 api = Api(app)
 
 conn = psycopg2.connect("dbname=user_db user=root password=glowing-banana host=user-db")
@@ -39,7 +39,7 @@ class User(Resource):
         try:
             cur.execute("SELECT password FROM users where username = %s;", (username,))
             user = cur.fetchone()
-        except Exception as e:
+        except Exception:
             return Response({"error": "Internal server error"}, status=500)
 
         if user is None:
@@ -61,7 +61,7 @@ class User(Resource):
 
         try:
             cur.execute(
-                "INSERT INTO Users (username, password) VALUES (%s, %s);",
+                "INSERT INTO users (username, password) VALUES (%s, %s);",
                 (username, password),
             )
             conn.commit()
