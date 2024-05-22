@@ -5,35 +5,35 @@ services:
     # Expose the frontend service on port 5000
     ports:
       - "5000:5000"
-    # Sync local file to container for development
-    volumes:
-      - ./gui/app.py:/app/app.py
 
   # User service
-  user:
+  user-service:
     build: ./user
     ports:
       # Expose service port
       - "5001:5001"
-      # Expose Prisma studio port for debugging purposes
-      - "5555:5555"
-    # Sync local file to container for development
-    volumes:
-      - ./user/app.py:/app/app.py
     # Wait for the user-db service to be healthy before starting the user service
     depends_on:
       user-db:
         condition: service_healthy
 
-    # User service database
+  # Event service
+  event-service:
+    build: ./event
+    ports:
+      # Expose service port
+      - "5002:5002"
+    # Wait for the sevent-db service to be healthy before starting the user service
+    depends_on:
+      event-db:
+        condition: service_healthy
+
+  # User service database
   user-db:
     image: postgres:16.3-bookworm
     # Specify volume
     volumes:
       - user-db-data:/var/lib/postgresql/data
-    ports:
-      # Outside access for debugging purposes
-      - "5432:5432"
     # Set environment variables
     environment:
       POSTGRES_USER: root
@@ -46,6 +46,25 @@ services:
       timeout: 10s
       retries: 5
 
+  # Event service database
+  event-db:
+    image: postgres:16.3-bookworm
+    # Specify volume
+    volumes:
+      - event-db-data:/var/lib/postgresql/data
+    # Set environment variables
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: glowing-banana
+      POSTGRES_DB: event_db
+    # Check for correct startup
+    healthcheck:
+      test: "pg_isready -U 'root' -d 'user_db' || exit 1"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
 volumes:
   # Define volumes to ensure data persistence of service databases
   user-db-data: {}
+  event-db-data: {}
