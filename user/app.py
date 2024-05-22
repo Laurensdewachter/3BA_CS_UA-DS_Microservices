@@ -1,5 +1,5 @@
 import psycopg2
-from flask import Flask, request, Response
+from flask import Flask, request
 from flask_restful import Api, Resource
 from jsonschema import validate, ValidationError
 
@@ -31,7 +31,7 @@ class User(Resource):
         try:
             check_schema(body)
         except ValidationError:
-            return Response({"error": "Invalid body structure"}, status=400)
+            return {"error": "Invalid body structure"}, 400
 
         username = body["username"]
         password = body["password"]
@@ -44,11 +44,11 @@ class User(Resource):
             conn.commit()
         except psycopg2.IntegrityError:
             conn.rollback()
-            return Response({"error": "User already exists"}, status=409)
+            return {"error": "User already exists"}, 409
         except Exception:
-            return Response({"error": "Internal server error"}, status=500)
+            return {"error": "Internal server error"}, 500
 
-        return Response({"success": True}, status=200)
+        return {"success": True}, 200
 
 
 class Login(Resource):
@@ -57,7 +57,7 @@ class Login(Resource):
         try:
             check_schema(body)
         except ValidationError:
-            return Response({"error": "Invalid body structure"}, status=400)
+            return {"error": "Invalid body structure"}, 400
 
         username = body["username"]
         password = body["password"]
@@ -66,14 +66,14 @@ class Login(Resource):
             cur.execute("SELECT password FROM users where username = %s;", (username,))
             user = cur.fetchone()
         except Exception:
-            return Response({"error": "Internal server error"}, status=500)
+            return {"error": "Internal server error"}, 500
 
         if user is None:
-            return Response({"error": "User does not exist"}, status=404)
+            return {"error": "User does not exist"}, 404
 
         if user[0] != password:
-            return Response({"error": "Incorrect password"}, status=401)
-        return Response({"success": True}, status=200)
+            return {"error": "Incorrect password"}, 401
+        return {"success": True}, 200
 
 
 api.add_resource(User, "/user")

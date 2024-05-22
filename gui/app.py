@@ -3,7 +3,6 @@ from flask import Flask, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 
-
 # The Username & Password of the currently logged-in User, this is used as a pseudo-cookie, as such this is not session-specific.
 username = None
 password = None
@@ -39,7 +38,12 @@ def home():
         # Try to keep in mind failure of the underlying microservice
         # =================================
 
-        public_events = [("Test event", "Tomorrow", "Benjamin")]  # TODO: call
+        response = requests.get("http://event-service:5002/event")
+
+        if successful_request(response):
+            public_events = response.json()["events"]
+        else:
+            public_events = []
 
         return render_template(
             "home.html", username=username, password=password, events=public_events
@@ -134,7 +138,6 @@ def share():
 
 @app.route("/event/<eventid>")
 def view_event(eventid):
-
     # ================================
     # FEATURE (event details)
     #
@@ -142,16 +145,18 @@ def view_event(eventid):
     # Try to keep in mind failure of the underlying microservice
     # =================================
 
-    success = True  # TODO: this might change depending on whether you can see the event (public, or private but invited)
+    response = requests.get(f"http://event-service:5002/event/{eventid}")
+    success = successful_request(response)
 
     if success:
-        event = [
-            "Test event",
-            "Tomorrow",
-            "Benjamin",
-            "Public",
-            [["Benjamin", "Participating"], ["Fabian", "Maybe Participating"]],
-        ]  # TODO: populate this with details from the actual event
+        event = response.json()["event"]
+        # event = [
+        #     "Test event",
+        #     "Tomorrow",
+        #     "Benjamin",
+        #     "Public",
+        #     [["Benjamin", "Participating"], ["Fabian", "Maybe Participating"]],
+        # ]
     else:
         event = None  # No success, so don't fetch the data
 
@@ -190,7 +195,6 @@ def login():
 
 @app.route("/register", methods=["POST"])
 def register():
-
     req_username, req_password = request.form["username"], request.form["password"]
 
     # ================================

@@ -1,7 +1,7 @@
 import datetime
 
 import psycopg2
-from flask import Flask, request, Response
+from flask import Flask, request
 from flask_restful import Api, Resource
 from jsonschema import validate, ValidationError
 
@@ -15,6 +15,45 @@ cur = conn.cursor()
 
 
 class Event(Resource):
+    def get(self, event_id):
+        try:
+            cur.execute(
+                "SELECT (title, date, organizer, public) FROM events WHERE id = %s;",
+                (event_id,),
+            )
+            event = cur.fetchone()
+        except Exception:
+            return {"error": "Internal server error"}, 500
+
+        if event is None:
+            return {"error": "Event not found"}, 404
+
+        return {"event": event}, 200
+
+    def get(self):
+        try:
+            cur.execute(
+                "SELECT title, date, organizer FROM events WHERE public = TRUE;"
+            )
+            event_entries = cur.fetchall()
+        except Exception:
+            return {"error": "Internal server error"}, 500
+
+        if event_entries is None:
+            events = []
+        else:
+            events = []
+            for entry in event_entries:
+                events.append(
+                    (
+                        entry[0],
+                        entry[1].strftime("%d-%m-%Y"),
+                        entry[2],
+                    )
+                )
+
+        return {"events": events}, 200
+
     def post(self):
         body = request.get_json()
         schema = {
@@ -32,7 +71,7 @@ class Event(Resource):
         try:
             validate(body, schema)
         except ValidationError:
-            return Response({"error": "Invalid body structure"}, 400)
+            return {"error": "Invalid body structure"}, 400
 
         title = body["title"]
         organizer = body["organizer"]
@@ -46,18 +85,18 @@ class Event(Resource):
         try:
             date = datetime.datetime.fromisoformat(date)
             cur.execute(
-                "INSERT INTO Events (title, organizer, date, description, public) VALUES (%s, %s, %s, %s, %s);",
+                "INSERT INTO events (title, organizer, date, description, public) VALUES (%s, %s, %s, %s, %s);",
                 (title, organizer, date, description, public),
             )
             conn.commit()
         except psycopg2.IntegrityError:
             conn.rollback()
-            return Response({"error": "Event already exists"}, 409)
+            return {"error": "Event already exists"}, 409
         except Exception as e:
             print(e)
-            return Response({"error": "Internal server error"}, 500)
+            return {"error": "Internal server error"}, 500
 
-        return Response({"success": True}, 200)
+        return {"success": True}, 200
 
 
-api.add_resource(Event, "/event")
+api.add_resource(Event, "/event", "/event/<int:event_id>")
