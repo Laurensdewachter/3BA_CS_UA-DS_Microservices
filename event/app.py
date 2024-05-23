@@ -16,21 +16,6 @@ cur = conn.cursor()
 
 
 class Event(Resource):
-    def get(self, event_id):
-        try:
-            cur.execute(
-                "SELECT (title, date, organizer, public) FROM events WHERE id = %s;",
-                (event_id,),
-            )
-            event = cur.fetchone()
-        except Exception:
-            return {"error": "Internal server error"}, 500
-
-        if event is None:
-            return {"error": "Event not found"}, 404
-
-        return {"event": event}, 200
-
     def get(self):
         try:
             cur.execute(
@@ -40,18 +25,15 @@ class Event(Resource):
         except Exception:
             return {"error": "Internal server error"}, 500
 
-        if event_entries is None:
-            events = []
-        else:
-            events = []
-            for entry in event_entries:
-                events.append(
-                    (
-                        entry[0],
-                        entry[1].strftime("%d-%m-%Y"),
-                        entry[2],
-                    )
+        events = []
+        for entry in event_entries:
+            events.append(
+                (
+                    entry[0],
+                    entry[1].strftime("%d-%m-%Y"),
+                    entry[2],
                 )
+            )
 
         return {"events": events}, 200
 
@@ -110,9 +92,7 @@ class Event(Resource):
                 continue
 
             try:
-                response = requests.get(
-                    f"http://user-service:5001/user/{invite.lower()}"
-                )
+                response = requests.get(f"http://user-service:5001/{invite.lower()}")
             except Exception:
                 return {"error": "Internal server error"}, 500
 
@@ -139,4 +119,56 @@ class Event(Resource):
             return {"success": True}, 200
 
 
-api.add_resource(Event, "/event", "/event/<int:event_id>")
+class EventDetails(Resource):
+    def get(self, event_id):
+        try:
+            cur.execute(
+                "SELECT (title, date, organizer, public) FROM events WHERE id = %s;",
+                (event_id,),
+            )
+            event = cur.fetchone()
+        except Exception:
+            return {"error": "Internal server error"}, 500
+
+        if event is None:
+            return {"error": "Event not found"}, 404
+
+        return {"event": event[0]}, 200
+
+
+class Invite(Resource):
+    def get(self, username):
+        try:
+            cur.execute(
+                "SELECT event_id FROM invites WHERE username = %s;",
+                (username,),
+            )
+            invites_entries = cur.fetchall()
+        except Exception:
+            return {"error": "Internal server error"}, 500
+
+        invites = []
+        for entry in invites_entries:
+            try:
+                response = requests.get(f"http://event-service:5002/{entry[0]}").json()[
+                    "event"
+                ]
+            except Exception:
+                return {"error": "Internal server error"}, 500
+            response = response[1:-1]
+            title = response.split(",")[0]
+            date = response.split(",")[1][1:-1].split(" ")[0]
+            organizer = response.split(",")[2]
+            public = response.split(",")[3]
+
+            public = "public" if public == "t" else "private"
+            date = datetime.datetime.fromisoformat(date).strftime("%d-%m-%Y")
+
+            invites.append((title, date, organizer, public))
+
+        return {"invites": invites}, 200
+
+
+api.add_resource(Event, "/")
+api.add_resource(EventDetails, "/<int:event_id>")
+api.add_resource(Invite, "/invites/<string:username>")

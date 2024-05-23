@@ -88,5 +88,5 @@ class Login(Resource):
         return {"success": True}, 200
 
 
-api.add_resource(User, "/user", "/user/<string:username>")
-api.add_resource(Login, "/user/login")
+api.add_resource(User, "/", "/<string:username>")
+api.add_resource(Login, "/login")

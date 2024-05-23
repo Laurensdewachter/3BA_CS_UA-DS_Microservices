@@ -38,7 +38,7 @@ def home():
         # Try to keep in mind failure of the underlying microservice
         # =================================
 
-        response = requests.get("http://event-service:5002/event")
+        response = requests.get("http://event-service:5002")
 
         if successful_request(response):
             public_events = response.json()["events"]
@@ -65,7 +65,7 @@ def create_event():
     # Given some data, create an event and send out the invites.
     # ==========================
     requests.post(
-        "http://event-service:5002/event",
+        "http://event-service:5002",
         json={
             "title": title,
             "organizer": username,
@@ -145,7 +145,7 @@ def view_event(eventid):
     # Try to keep in mind failure of the underlying microservice
     # =================================
 
-    response = requests.get(f"http://event-service:5002/event/{eventid}")
+    response = requests.get(f"http://event-service:5002/{eventid}")
     success = successful_request(response)
 
     if success:
@@ -178,7 +178,7 @@ def login():
     # ================================
 
     response = requests.post(
-        "http://user-service:5001/user/login",
+        "http://user-service:5001/login",
         json={"username": req_username, "password": req_password},
     )
     success: bool = successful_request(response)
@@ -207,7 +207,7 @@ def register():
     # ================================
 
     response = requests.post(
-        "http://user-service:5001/user",
+        "http://user-service:5001",
         json={"username": req_username, "password": req_password},
     )
     success: bool = successful_request(response)
@@ -231,9 +231,18 @@ def invites():
     # retrieve a list with all events you are invited to and have not yet responded to
     # ==============================
 
-    my_invites = [(1, "Test event", "Tomorrow", "Benjamin", "Private")]  # TODO: process
+    response = requests.get(f"http://event-service:5002/invites/{username}")
+    if not successful_request(response):
+        invites = []
+    else:
+        invites = response.json()["invites"]
+
+    # Add an index to the invites
+    for idx, invite in enumerate(invites):
+        invite.insert(0, idx + 1)
+
     return render_template(
-        "invites.html", username=username, password=password, invites=my_invites
+        "invites.html", username=username, password=password, invites=invites
     )
 
 
