@@ -9,11 +9,24 @@ generator db {
   recursive_type_depth = 5
 }
 
+enum Response {
+  ACCEPTED
+  DECLINED
+  NO_REPSONSE
+}
+
 model events {
   id          Int      @id @default(autoincrement())
-  title       String   @unique
+  title       String
   organizer   String
   date        DateTime
   description String
   public      Boolean
+}
+
+model invites {
+  id       Int      @id @default(autoincrement())
+  event_id Int
+  username String
+  response Response @default(NO_REPSONSE)
 }

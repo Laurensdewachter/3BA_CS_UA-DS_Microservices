@@ -26,6 +26,18 @@ def check_schema(body):
 
 
 class User(Resource):
+    def get(self, username):
+        try:
+            cur.execute("SELECT * FROM users WHERE username = %s;", (username.lower(),))
+            user = cur.fetchone()
+        except Exception:
+            return {"error": "Internal server error"}, 500
+
+        if user is None:
+            return {"error": "User not found"}, 404
+
+        return {"user": user}, 200
+
     def post(self):
         body = request.get_json()
         try:
@@ -33,7 +45,7 @@ class User(Resource):
         except ValidationError:
             return {"error": "Invalid body structure"}, 400
 
-        username = body["username"]
+        username = body["username"].lower()
         password = body["password"]
 
         try:
@@ -59,11 +71,11 @@ class Login(Resource):
         except ValidationError:
             return {"error": "Invalid body structure"}, 400
 
-        username = body["username"]
+        username = body["username"].lower()
         password = body["password"]
 
         try:
-            cur.execute("SELECT password FROM users where username = %s;", (username,))
+            cur.execute("SELECT password FROM users WHERE username = %s;", (username,))
             user = cur.fetchone()
         except Exception:
             return {"error": "Internal server error"}, 500
@@ -76,5 +88,5 @@ class Login(Resource):
         return {"success": True}, 200
 
 
-api.add_resource(User, "/user")
+api.add_resource(User, "/user", "/user/<string:username>")
 api.add_resource(Login, "/user/login")

@@ -1,6 +1,7 @@
 import datetime
 
 import psycopg2
+import requests
 from flask import Flask, request
 from flask_restful import Api, Resource
 from jsonschema import validate, ValidationError
@@ -77,10 +78,10 @@ class Event(Resource):
         organizer = body["organizer"]
         description = body["description"]
         date = body["date"]
-        publicprivate = body["publicprivate"]
+        public_private = body["publicprivate"]
         invites = body["invites"]
 
-        public = True if publicprivate == "public" else False
+        public = True if public_private == "public" else False
 
         try:
             date = datetime.datetime.fromisoformat(date)
@@ -88,15 +89,54 @@ class Event(Resource):
                 "INSERT INTO events (title, organizer, date, description, public) VALUES (%s, %s, %s, %s, %s);",
                 (title, organizer, date, description, public),
             )
-            conn.commit()
+            cur.execute("SELECT id FROM events ORDER BY id DESC LIMIT 1;")
+            event_id = cur.fetchone()[0]
         except psycopg2.IntegrityError:
             conn.rollback()
             return {"error": "Event already exists"}, 409
-        except Exception as e:
-            print(e)
+        except ValueError:
+            conn.rollback()
+            return {"error": "Invalid date format"}, 400
+        except Exception:
+            conn.rollback()
             return {"error": "Internal server error"}, 500
 
-        return {"success": True}, 200
+        invites = invites.split(";")
+        invites = [invite.strip() for invite in invites]
+        invites = list(filter(None, invites))
+        invalid_user = False
+        for invite in invites:
+            if invite.lower() == organizer.lower():
+                continue
+
+            try:
+                response = requests.get(
+                    f"http://user-service:5001/user/{invite.lower()}"
+                )
+            except Exception:
+                return {"error": "Internal server error"}, 500
+
+            if response.status_code != 200:
+                invalid_user = True
+                continue
+
+            try:
+                cur.execute(
+                    "INSERT INTO invites (event_id, username) VALUES (%s, %s);",
+                    (event_id, invite),
+                )
+            except psycopg2.IntegrityError:
+                conn.rollback()
+                return {"error": "Invite already exists"}, 409
+            except Exception:
+                conn.rollback()
+                return {"error": "Internal server error"}, 500
+
+        conn.commit()
+        if invalid_user:
+            return {"error": "Invalid user"}, 400
+        else:
+            return {"success": True}, 200
 
 
 api.add_resource(Event, "/event", "/event/<int:event_id>")
