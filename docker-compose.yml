@@ -45,8 +45,6 @@ services:
     # Specify volume
     volumes:
       - user-db-data:/var/lib/postgresql/data
-    ports:
-      - "8001:5432"
     # Set environment variables
     environment:
       POSTGRES_USER: root
@@ -65,8 +63,6 @@ services:
     # Specify volume
     volumes:
       - event-db-data:/var/lib/postgresql/data
-    ports:
-      - "8002:5432"
     # Set environment variables
     environment:
       POSTGRES_USER: root
@@ -85,8 +81,6 @@ services:
     # Specify volume
     volumes:
       - calendar-db-data:/var/lib/postgresql/data
-    ports:
-      - "8003:5432"
     # Set environment variables
     environment:
       POSTGRES_USER: root
@@ -98,6 +92,12 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+
+  # Docs
+  docs:
+    build: ./docs
+    ports:
+    - "5004:80"
 
 volumes:
   # Define volumes to ensure data persistence of service databases
