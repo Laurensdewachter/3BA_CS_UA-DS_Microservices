@@ -155,14 +155,14 @@ def view_event(eventid):
         success = False
 
     if success:
-        event = response.json()["event"]
-        # event = [
-        #     "Test event",
-        #     "Tomorrow",
-        #     "Benjamin",
-        #     "Public",
-        #     [["Benjamin", "Participating"], ["Fabian", "Maybe Participating"]],
-        # ]
+        event = response.json()
+        event = [
+            event["event"],
+            event["date"],
+            event["organizer"],
+            event["public"],
+            event["invites"],
+        ]
     else:
         event = None
 

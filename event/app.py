@@ -123,7 +123,7 @@ class EventDetails(Resource):
     def get(self, event_id):
         try:
             cur.execute(
-                "SELECT (title, date, organizer, public) FROM events WHERE id = %s;",
+                "SELECT title, date, organizer, public FROM events WHERE id = %s;",
                 (event_id,),
             )
             event = cur.fetchone()
@@ -133,46 +133,68 @@ class EventDetails(Resource):
         if event is None:
             return {"error": "Event not found"}, 404
 
-        return {"event": event[0]}, 200
+        print(event, flush=True)
+        title = event[0]
+        date = event[1].strftime("%d-%m-%Y")
+        organizer = event[2]
+        public = "Public" if event[3] == "t" else "Private"
+
+        invites = []
+        try:
+            cur.execute(
+                "SELECT username, response FROM invites WHERE event_id = %s;",
+                (event_id,),
+            )
+            invite_entries = cur.fetchall()
+        except Exception:
+            return {"error": "Internal server error"}, 500
+
+        for entry in invite_entries:
+            invites.append((entry[0], entry[1]))
+
+        return {
+            "event": title,
+            "date": date,
+            "organizer": organizer,
+            "public": public,
+            "invites": invites,
+        }, 200
 
 
 class UserEvents(Resource):
     def get(self, username):
         try:
             cur.execute(
-                "SELECT (event_id, response) FROM invites WHERE username = %s AND response = %s OR response = %s;",
+                "SELECT event_id, response FROM invites WHERE username = %s AND response = %s OR response = %s;",
                 (
                     username,
                     "ACCEPTED",
                     "MAYBE",
                 ),
             )
-            event_ids = cur.fetchall()
+            event_entries = cur.fetchall()
         except Exception:
             return {"error": "Internal server error"}, 500
 
         events = []
-        for event_entries in event_ids:
+        for entry in event_entries:
             try:
-                event_id = int(event_entries[0][1:-1].split(",")[0])
-                status = event_entries[0][1:-1].split(",")[1]
+                event_id = entry[0]
+                status = entry[1]
                 cur.execute(
-                    "SELECT (id, title, date, organizer, public) FROM events WHERE id = %s;",
+                    "SELECT id, title, date, organizer, public FROM events WHERE id = %s;",
                     (event_id,),
                 )
                 entry = cur.fetchone()
 
-                entry_str = entry[0][1:-1]
                 events.append(
                     (
-                        entry_str.split(",")[0],
-                        entry_str.split(",")[1],
-                        datetime.datetime.fromisoformat(
-                            entry_str.split(",")[2][1:-1]
-                        ).strftime("%d-%m-%Y"),
-                        entry_str.split(",")[3],
+                        entry[0],
+                        entry[1],
+                        entry[2].strftime("%d-%m-%Y"),
+                        entry[3],
                         "Going" if status == "ACCEPTED" else "Maybe",
-                        "Public" if entry_str.split(",")[4] == "f" else "Private",
+                        "Public" if entry[4] == "t" else "Private",
                     )
                 )
             except Exception:
@@ -198,19 +220,13 @@ class Invite(Resource):
         invites = []
         for entry in invites_entries:
             try:
-                response = requests.get(f"http://event-service:5002/{entry[0]}").json()[
-                    "event"
-                ]
+                response = requests.get(f"http://event-service:5002/{entry[0]}").json()
             except requests.exceptions.ConnectionError:
                 return {"error": "Internal server error"}, 500
-            response = response[1:-1]
-            title = response.split(",")[0]
-            date = response.split(",")[1][1:-1].split(" ")[0]
-            organizer = response.split(",")[2]
-            public = response.split(",")[3]
-
-            public = "public" if public == "t" else "private"
-            date = datetime.datetime.fromisoformat(date).strftime("%d-%m-%Y")
+            title = response["event"]
+            date = response["date"]
+            organizer = response["organizer"]
+            public = response["public"]
 
             invites.append((entry[0], title, date, organizer, public))
 
