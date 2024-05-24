@@ -28,6 +28,17 @@ services:
       event-db:
         condition: service_healthy
 
+  # Calendar service
+  calendar-service:
+    build: ./calendar
+    ports:
+      # Expose service port
+      - "5003:5003"
+    # Wait for the sevent-db service to be healthy before starting the user service
+    depends_on:
+      event-db:
+        condition: service_healthy
+
   # User service database
   user-db:
     image: postgres:16.3-bookworm
@@ -68,7 +79,28 @@ services:
       timeout: 10s
       retries: 5
 
+  # Calendar service database
+  calendar-db:
+    image: postgres:16.3-bookworm
+    # Specify volume
+    volumes:
+      - calendar-db-data:/var/lib/postgresql/data
+    ports:
+      - "8003:5432"
+    # Set environment variables
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: glowing-banana
+      POSTGRES_DB: calendar_db
+    # Check for correct startup
+    healthcheck:
+      test: "pg_isready -U 'root' -d 'calendar_db' || exit 1"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
 volumes:
   # Define volumes to ensure data persistence of service databases
   user-db-data: {}
   event-db-data: {}
+  calendar-db-data: {}

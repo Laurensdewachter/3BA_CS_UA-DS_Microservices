@@ -1,0 +1,21 @@
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://root:glowing-banana@calendar-db:5432/calendar_db"
+}
+
+generator db {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+model calendar {
+  id       String  @id @default(cuid())
+  username String
+  events   event[]
+}
+
+model event {
+  id        Int        @id
+  calendars calendar[]
+}

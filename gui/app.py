@@ -76,7 +76,7 @@ def create_event():
                 "invites": invites,
             },
         )
-    except ConnectionError:
+    except requests.exceptions.ConnectionError:
         pass
 
     return redirect("/")
@@ -95,14 +95,14 @@ def calendar():
     # Try to keep in mind failure of the underlying microservice
     # =================================
 
-    success = (
-        True  # TODO: this might change depending on if the calendar is shared with you
-    )
+    try:
+        response = requests.get(f"http://calendar-service:5003/{calendar_user.lower()}")
+        success = successful_request(response)
+    except requests.exceptions.ConnectionError:
+        success = False
 
     if success:
-        calendar = [
-            (1, "Test event", "Tomorrow", "Benjamin", "Going", "Public")
-        ]  # TODO: call
+        calendar = response.json()["events"]
     else:
         calendar = None
 
@@ -151,7 +151,7 @@ def view_event(eventid):
     try:
         response = requests.get(f"http://event-service:5002/{eventid}")
         success = successful_request(response)
-    except ConnectionError:
+    except requests.exceptions.ConnectionError:
         success = False
 
     if success:
@@ -189,7 +189,7 @@ def login():
             json={"username": req_username, "password": req_password},
         )
         success = successful_request(response)
-    except ConnectionError:
+    except requests.exceptions.ConnectionError:
         success = False
 
     save_to_session("success", success)
@@ -221,7 +221,7 @@ def register():
             json={"username": req_username, "password": req_password},
         )
         success = successful_request(response)
-    except ConnectionError:
+    except requests.exceptions.ConnectionError:
         success = False
 
     save_to_session("success", success)
@@ -245,7 +245,7 @@ def invites():
     try:
         response = requests.get(f"http://event-service:5002/invites/{username}")
         success = successful_request(response)
-    except ConnectionError:
+    except requests.exceptions.ConnectionError:
         success = False
 
     if success:
@@ -273,7 +273,7 @@ def process_invite():
             f"http://event-service:5002/invites",
             json={"username": username, "status": status, "event_id": int(eventId)},
         )
-    except ConnectionError:
+    except requests.exceptions.ConnectionError:
         pass
 
     return redirect("/invites")

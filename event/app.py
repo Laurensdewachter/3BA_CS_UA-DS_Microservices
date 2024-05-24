@@ -93,7 +93,7 @@ class Event(Resource):
 
             try:
                 response = requests.get(f"http://user-service:5001/{invite.lower()}")
-            except ConnectionError:
+            except requests.exceptions.ConnectionError:
                 return {"error": "Internal server error"}, 500
 
             if response.status_code != 200:
@@ -136,6 +136,51 @@ class EventDetails(Resource):
         return {"event": event[0]}, 200
 
 
+class UserEvents(Resource):
+    def get(self, username):
+        try:
+            cur.execute(
+                "SELECT (event_id, response) FROM invites WHERE username = %s AND response = %s OR response = %s;",
+                (
+                    username,
+                    "ACCEPTED",
+                    "MAYBE",
+                ),
+            )
+            event_ids = cur.fetchall()
+        except Exception:
+            return {"error": "Internal server error"}, 500
+
+        events = []
+        for event_entries in event_ids:
+            try:
+                event_id = int(event_entries[0][1:-1].split(",")[0])
+                status = event_entries[0][1:-1].split(",")[1]
+                cur.execute(
+                    "SELECT (id, title, date, organizer, public) FROM events WHERE id = %s;",
+                    (event_id,),
+                )
+                entry = cur.fetchone()
+
+                entry_str = entry[0][1:-1]
+                events.append(
+                    (
+                        entry_str.split(",")[0],
+                        entry_str.split(",")[1],
+                        datetime.datetime.fromisoformat(
+                            entry_str.split(",")[2][1:-1]
+                        ).strftime("%d-%m-%Y"),
+                        entry_str.split(",")[3],
+                        "Going" if status == "ACCEPTED" else "Maybe",
+                        "Public" if entry_str.split(",")[4] == "f" else "Private",
+                    )
+                )
+            except Exception:
+                return {"error": "Internal server error"}, 500
+
+        return {"events": events}, 200
+
+
 class Invite(Resource):
     def get(self, username):
         try:
@@ -156,7 +201,7 @@ class Invite(Resource):
                 response = requests.get(f"http://event-service:5002/{entry[0]}").json()[
                     "event"
                 ]
-            except ConnectionError:
+            except requests.exceptions.ConnectionError:
                 return {"error": "Internal server error"}, 500
             response = response[1:-1]
             title = response.split(",")[0]
@@ -216,4 +261,5 @@ class Invite(Resource):
 
 api.add_resource(Event, "/")
 api.add_resource(EventDetails, "/<int:event_id>")
+api.add_resource(UserEvents, "/<string:username>")
 api.add_resource(Invite, "/invites", "/invites/<string:username>")
