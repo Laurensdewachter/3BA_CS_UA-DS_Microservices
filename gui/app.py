@@ -133,7 +133,15 @@ def share():
     # Share your calendar with a certain user. Return success = true / false depending on whether the sharing is successful.
     # ========================================
 
-    success = True  # TODO
+    try:
+        response = requests.post(
+            "http://calendar-service:5003",
+            json={"username": username, "share_with": share_user},
+        )
+        success = successful_request(response)
+    except requests.exceptions.ConnectionError:
+        success = False
+
     return render_template(
         "share.html", username=username, password=password, success=success
     )

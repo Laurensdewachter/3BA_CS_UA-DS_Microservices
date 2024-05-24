@@ -7,7 +7,9 @@ from jsonschema import validate, ValidationError
 app = Flask("user-service")
 api = Api(app)
 
-conn = psycopg2.connect("dbname=user_db user=root password=glowing-banana host=user-db")
+conn = psycopg2.connect(
+    "dbname=calendar_db user=root password=glowing-banana host=calendar-db"
+)
 cur = conn.cursor()
 
 
@@ -40,12 +42,15 @@ class Calendar(Resource):
 
         try:
             cur.execute(
-                "INSERT INTO calendar (username, shared_with) VALUES (%s, %s);",
+                "INSERT INTO calendar_shares (owner, shared_with) VALUES (%s, %s);",
                 (username, share_with),
             )
-            conn.commit()
         except Exception:
+            conn.rollback()
             return {"error": "Internal server error"}, 500
+
+        conn.commit()
+        return {"success": True}, 200
 
 
 api.add_resource(Calendar, "/", "/<string:username>")

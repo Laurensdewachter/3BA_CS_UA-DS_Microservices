@@ -1,4 +1,5 @@
 import psycopg2
+import requests
 from flask import Flask, request
 from flask_restful import Api, Resource
 from jsonschema import validate, ValidationError
@@ -58,6 +59,15 @@ class User(Resource):
             conn.rollback()
             return {"error": "User already exists"}, 409
         except Exception:
+            return {"error": "Internal server error"}, 500
+
+        try:
+            requests.post(
+                "http://calendar-service:5003",
+                json={"username": username, "share_with": username},
+            )
+        except requests.exceptions.ConnectionError:
+            conn.rollback()
             return {"error": "Internal server error"}, 500
 
         return {"success": True}, 200
