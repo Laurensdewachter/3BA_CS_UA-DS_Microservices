@@ -9,13 +9,9 @@ generator db {
   recursive_type_depth = 5
 }
 
-model calendar {
-  id       String  @id @default(cuid())
-  username String
-  events   event[]
-}
+model calendar_shares {
+  owner       String
+  shared_with String
 
-model event {
-  id        Int        @id
-  calendars calendar[]
+  @@id([owner, shared_with])
 }

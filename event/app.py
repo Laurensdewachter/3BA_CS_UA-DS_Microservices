@@ -112,6 +112,16 @@ class Event(Resource):
                 conn.rollback()
                 return {"error": "Internal server error"}, 500
 
+        try:
+            # Add invite for organizer with accepted status
+            cur.execute(
+                "INSERT INTO invites (event_id, username, response) VALUES (%s, %s, %s);",
+                (event_id, organizer, "ACCEPTED"),
+            )
+        except Exception:
+            conn.rollback()
+            return {"error": "Internal server error"}, 500
+
         conn.commit()
         if invalid_user:
             return {"error": "Invalid user"}, 400
