@@ -1,0 +1,5 @@
+Flask-RESTful==0.3.10
+jsonschema==4.22.0
+prisma==0.13.1
+psycopg2-binary==2.9.9
+requests==2.31.0

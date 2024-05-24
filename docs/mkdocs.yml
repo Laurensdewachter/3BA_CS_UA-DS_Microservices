@@ -1,0 +1,6 @@
+site_name: "DS: Microservices"
+theme:
+  name: 'material'
+nav:
+  - Index: 'docs.md'
+  - API: 'API.md'
