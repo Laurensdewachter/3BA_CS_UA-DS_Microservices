@@ -96,7 +96,10 @@ def calendar():
     # =================================
 
     try:
-        response = requests.get(f"http://calendar-service:5003/{calendar_user.lower()}")
+        response = requests.get(
+            f"http://calendar-service:5003/{calendar_user.lower()}",
+            params={"user": username.lower()},
+        )
         success = successful_request(response)
     except requests.exceptions.ConnectionError:
         success = False
