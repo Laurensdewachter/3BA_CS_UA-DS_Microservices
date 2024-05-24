@@ -12,7 +12,8 @@ generator db {
 enum Response {
   ACCEPTED
   DECLINED
-  NO_REPSONSE
+  MAYBE
+  NO_RESPONSE
 }
 
 model events {
@@ -28,5 +29,5 @@ model invites {
   id       Int      @id @default(autoincrement())
   event_id Int
   username String
-  response Response @default(NO_REPSONSE)
+  response Response @default(NO_RESPONSE)
 }

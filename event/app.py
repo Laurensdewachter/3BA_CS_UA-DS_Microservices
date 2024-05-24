@@ -140,8 +140,11 @@ class Invite(Resource):
     def get(self, username):
         try:
             cur.execute(
-                "SELECT event_id FROM invites WHERE username = %s;",
-                (username,),
+                "SELECT event_id FROM invites WHERE username = %s AND response = %s;",
+                (
+                    username,
+                    "NO_RESPONSE",
+                ),
             )
             invites_entries = cur.fetchall()
         except Exception:
@@ -164,11 +167,53 @@ class Invite(Resource):
             public = "public" if public == "t" else "private"
             date = datetime.datetime.fromisoformat(date).strftime("%d-%m-%Y")
 
-            invites.append((title, date, organizer, public))
+            invites.append((entry[0], title, date, organizer, public))
 
         return {"invites": invites}, 200
+
+    def post(self):
+        body = request.get_json()
+        schema = {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "integer"},
+                "status": {"type": "string"},
+                "username": {"type": "string"},
+            },
+            "required": ["event_id", "status", "username"],
+        }
+        try:
+            validate(body, schema)
+        except ValidationError:
+            return {"error": "Invalid body structure"}, 400
+
+        event_id = body["event_id"]
+        status = body["status"]
+        username = body["username"]
+
+        match status:
+            case "Participate":
+                status = "ACCEPTED"
+            case "Don't Participate":
+                status = "DECLINED"
+            case "Maybe Participate":
+                status = "MAYBE"
+            case _:
+                return {"error": "Invalid status"}, 400
+
+        try:
+            cur.execute(
+                "UPDATE invites SET response = %s WHERE event_id = %s AND username = %s;",
+                (status, event_id, username),
+            )
+        except Exception:
+            conn.rollback()
+            return {"error": "Internal server error"}, 500
+
+        conn.commit()
+        return {"success": True}, 200
 
 
 api.add_resource(Event, "/")
 api.add_resource(EventDetails, "/<int:event_id>")
-api.add_resource(Invite, "/invites/<string:username>")
+api.add_resource(Invite, "/invites", "/invites/<string:username>")

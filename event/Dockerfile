@@ -16,4 +16,4 @@ RUN prisma generate
 COPY app.py /app
 
 # Push the database schema to the database on container start
-CMD prisma db push; python -m flask --app app run --host 0.0.0.0 --port 5002
+CMD prisma db push; python -m flask run --host 0.0.0.0 --port 5002

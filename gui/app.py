@@ -237,10 +237,6 @@ def invites():
     else:
         invites = response.json()["invites"]
 
-    # Add an index to the invites
-    for idx, invite in enumerate(invites):
-        invite.insert(0, idx + 1)
-
     return render_template(
         "invites.html", username=username, password=password, invites=invites
     )
@@ -256,7 +252,10 @@ def process_invite():
     # process an invite (accept, maybe, don't accept)
     # =======================
 
-    pass  # TODO: send to microservice
+    requests.post(
+        f"http://event-service:5002/invites",
+        json={"username": username, "status": status, "event_id": int(eventId)},
+    )
 
     return redirect("/invites")
 
