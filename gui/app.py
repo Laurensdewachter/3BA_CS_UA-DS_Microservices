@@ -64,17 +64,20 @@ def create_event():
     #
     # Given some data, create an event and send out the invites.
     # ==========================
-    requests.post(
-        "http://event-service:5002",
-        json={
-            "title": title,
-            "organizer": username,
-            "description": description,
-            "date": date,
-            "publicprivate": publicprivate,
-            "invites": invites,
-        },
-    )
+    try:
+        requests.post(
+            "http://event-service:5002",
+            json={
+                "title": title,
+                "organizer": username,
+                "description": description,
+                "date": date,
+                "publicprivate": publicprivate,
+                "invites": invites,
+            },
+        )
+    except ConnectionError:
+        pass
 
     return redirect("/")
 
@@ -145,8 +148,11 @@ def view_event(eventid):
     # Try to keep in mind failure of the underlying microservice
     # =================================
 
-    response = requests.get(f"http://event-service:5002/{eventid}")
-    success = successful_request(response)
+    try:
+        response = requests.get(f"http://event-service:5002/{eventid}")
+        success = successful_request(response)
+    except ConnectionError:
+        success = False
 
     if success:
         event = response.json()["event"]
@@ -158,7 +164,7 @@ def view_event(eventid):
         #     [["Benjamin", "Participating"], ["Fabian", "Maybe Participating"]],
         # ]
     else:
-        event = None  # No success, so don't fetch the data
+        event = None
 
     return render_template(
         "event.html", username=username, password=password, event=event, success=success
@@ -177,11 +183,14 @@ def login():
     # Also pay attention to the status code returned by the microservice.
     # ================================
 
-    response = requests.post(
-        "http://user-service:5001/login",
-        json={"username": req_username, "password": req_password},
-    )
-    success: bool = successful_request(response)
+    try:
+        response = requests.post(
+            "http://user-service:5001/login",
+            json={"username": req_username, "password": req_password},
+        )
+        success = successful_request(response)
+    except ConnectionError:
+        success = False
 
     save_to_session("success", success)
     if success:
@@ -206,14 +215,16 @@ def register():
     # Registration is successful if a user with the same username doesn't exist yet.
     # ================================
 
-    response = requests.post(
-        "http://user-service:5001",
-        json={"username": req_username, "password": req_password},
-    )
-    success: bool = successful_request(response)
+    try:
+        response = requests.post(
+            "http://user-service:5001",
+            json={"username": req_username, "password": req_password},
+        )
+        success = successful_request(response)
+    except ConnectionError:
+        success = False
 
     save_to_session("success", success)
-
     if success:
         global username, password
 
@@ -231,11 +242,16 @@ def invites():
     # retrieve a list with all events you are invited to and have not yet responded to
     # ==============================
 
-    response = requests.get(f"http://event-service:5002/invites/{username}")
-    if not successful_request(response):
-        invites = []
-    else:
+    try:
+        response = requests.get(f"http://event-service:5002/invites/{username}")
+        success = successful_request(response)
+    except ConnectionError:
+        success = False
+
+    if success:
         invites = response.json()["invites"]
+    else:
+        invites = []
 
     return render_template(
         "invites.html", username=username, password=password, invites=invites
@@ -252,10 +268,13 @@ def process_invite():
     # process an invite (accept, maybe, don't accept)
     # =======================
 
-    requests.post(
-        f"http://event-service:5002/invites",
-        json={"username": username, "status": status, "event_id": int(eventId)},
-    )
+    try:
+        requests.post(
+            f"http://event-service:5002/invites",
+            json={"username": username, "status": status, "event_id": int(eventId)},
+        )
+    except ConnectionError:
+        pass
 
     return redirect("/invites")
 

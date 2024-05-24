@@ -93,7 +93,7 @@ class Event(Resource):
 
             try:
                 response = requests.get(f"http://user-service:5001/{invite.lower()}")
-            except Exception:
+            except ConnectionError:
                 return {"error": "Internal server error"}, 500
 
             if response.status_code != 200:
@@ -156,7 +156,7 @@ class Invite(Resource):
                 response = requests.get(f"http://event-service:5002/{entry[0]}").json()[
                     "event"
                 ]
-            except Exception:
+            except ConnectionError:
                 return {"error": "Internal server error"}, 500
             response = response[1:-1]
             title = response.split(",")[0]
